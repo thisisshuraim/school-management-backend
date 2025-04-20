@@ -29,4 +29,32 @@ router.delete('/:id', async (req, res) => {
   res.json(deleted);
 });
 
+router.get('/my', protect, async (req, res) => {
+  const user = req.user;
+
+  let classSection = null;
+
+  if (user.role === 'student') {
+    const student = await require('../models/Student').findOne({ user: user.id });
+    classSection = student?.classSection;
+  } else if (user.role === 'teacher') {
+    const teacher = await require('../models/Teacher').findOne({ user: user.id });
+    if (teacher?.classTeacher) {
+      classSection = teacher.classTeacherClass;
+    } else {
+      return res.status(403).json({ message: 'Not a class teacher' });
+    }
+  } else {
+    return res.status(403).json({ message: 'Unauthorized' });
+  }
+
+  if (!classSection) return res.status(404).json({ message: 'Class section not found' });
+
+  const tt = await Timetable.findOne({ classSection });
+  if (!tt) return res.status(404).json({ message: 'Timetable not uploaded yet' });
+
+  const host = `${req.protocol}://${req.get('host')}`;
+  res.json({ ...tt.toObject(), fileUrl: `${host}/${tt.fileUrl}` });
+});
+
 module.exports = router;
