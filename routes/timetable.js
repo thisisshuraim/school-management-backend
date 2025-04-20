@@ -6,32 +6,9 @@ const { protect, restrictTo } = require('../middleware/auth');
 const upload = multer({ dest: 'uploads/' });
 const router = express.Router();
 
-router.use(protect, restrictTo('admin'));
-
-router.get('/', async (req, res) => {
-  const items = await Timetable.find();
-  const host = `${req.protocol}://${req.get('host')}`;
-  const enhanced = items.map((t) => ({
-    ...t.toObject(),
-    fileUrl: `${host}/${t.fileUrl}` // ensure full URL is returned
-  }));
-  res.json(enhanced);
-});
-
-router.post('/', upload.single('file'), async (req, res) => {
-  const fileUrl = `uploads/${req.file?.filename}`;
-  const t = await Timetable.create({ ...req.body, fileUrl });
-  res.status(201).json(t);
-});
-
-router.delete('/:id', async (req, res) => {
-  const deleted = await Timetable.findByIdAndDelete(req.params.id);
-  res.json(deleted);
-});
-
+// Public route for students & class teachers (must come BEFORE admin middleware)
 router.get('/my', protect, async (req, res) => {
   const user = req.user;
-
   let classSection = null;
 
   if (user.role === 'student') {
@@ -55,6 +32,30 @@ router.get('/my', protect, async (req, res) => {
 
   const host = `${req.protocol}://${req.get('host')}`;
   res.json({ ...tt.toObject(), fileUrl: `${host}/${tt.fileUrl}` });
+});
+
+// Admin-only routes
+router.use(protect, restrictTo('admin'));
+
+router.get('/', async (req, res) => {
+  const items = await Timetable.find();
+  const host = `${req.protocol}://${req.get('host')}`;
+  const enhanced = items.map((t) => ({
+    ...t.toObject(),
+    fileUrl: `${host}/${t.fileUrl}`
+  }));
+  res.json(enhanced);
+});
+
+router.post('/', upload.single('file'), async (req, res) => {
+  const fileUrl = `uploads/${req.file?.filename}`;
+  const t = await Timetable.create({ ...req.body, fileUrl });
+  res.status(201).json(t);
+});
+
+router.delete('/:id', async (req, res) => {
+  const deleted = await Timetable.findByIdAndDelete(req.params.id);
+  res.json(deleted);
 });
 
 module.exports = router;
