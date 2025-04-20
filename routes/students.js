@@ -9,9 +9,14 @@ const router = express.Router();
 router.use(protect);
 
 router.get('/me', restrictTo('student'), async (req, res) => {
-  const student = await require('../models/Student').findOne({ user: req.user.id });
-  if (!student) return res.status(404).json({ message: 'Student not found' });
-  res.json(student);
+  try {
+    const student = await Student.findOne({ user: req.user.id }).populate('user');
+    if (!student) return res.status(404).json({ message: 'Student not found' });
+    res.json(student);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
 });
 
 // ✅ Populated user field here
