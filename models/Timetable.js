@@ -1,10 +1,7 @@
-const mongoose = require("mongoose");
-
+const mongoose = require('mongoose');
 const timetableSchema = new mongoose.Schema({
-  class: String,
-  section: String,
-  uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  fileUrl: String
+  classSection: { type: String, required: true },
+  fileUrl: String,
+  createdAt: { type: Date, default: Date.now }
 });
-
-module.exports = mongoose.model("Timetable", timetableSchema);
+module.exports = mongoose.model('Timetable', timetableSchema);

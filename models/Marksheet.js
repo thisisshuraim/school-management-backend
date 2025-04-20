@@ -1,8 +1,7 @@
-const mongoose = require("mongoose");
-
+const mongoose = require('mongoose');
 const marksheetSchema = new mongoose.Schema({
-  studentId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  fileUrl: String
+  student: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
+  fileUrl: String,
+  createdAt: { type: Date, default: Date.now }
 });
-
-module.exports = mongoose.model("Marksheet", marksheetSchema);
+module.exports = mongoose.model('Marksheet', marksheetSchema);
