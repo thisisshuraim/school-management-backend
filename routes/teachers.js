@@ -6,6 +6,13 @@ const { protect, restrictTo } = require('../middleware/auth');
 const router = express.Router();
 router.use(protect);
 
+router.get('/me', restrictTo('teacher'), async (req, res) => {
+  const teacher = await require('../models/Teacher').findOne({ user: req.user.id });
+  if (!teacher) return res.status(404).json({ message: 'Teacher not found' });
+  res.json(teacher);
+});
+
+
 router.get('/', restrictTo('admin'), async (req, res) => {
   const teachers = await Teacher.find().populate('user');
   res.json(teachers);
