@@ -1,12 +1,25 @@
 // routes/assignments.js
-
 const express = require('express');
 const multer = require('multer');
+const multerS3 = require('multer-s3');
+const { v4: uuidv4 } = require('uuid');
 const Assignment = require('../models/Assignment');
 const { protect } = require('../middleware/auth');
+const s3 = require('../utils/s3');
 
-const upload = multer({ dest: 'uploads/' });
 const router = express.Router();
+
+const upload = multer({
+  storage: multerS3({
+    s3,
+    bucket: 'school-management-thisisshuraim',
+    acl: 'public-read',
+    key: (req, file, cb) => {
+      const filename = `assignments/${uuidv4()}-${file.originalname}`;
+      cb(null, filename);
+    }
+  })
+});
 
 router.use(protect);
 
@@ -20,7 +33,7 @@ router.get('/', async (req, res) => {
 router.post('/', upload.single('file'), async (req, res) => {
   const { classSection, title, subject, deadline } = req.body;
 
-  if (!classSection || !title || !subject || !deadline) {
+  if (!classSection || !title || !subject || !deadline || !req.file) {
     return res.status(400).json({ message: 'Missing required fields' });
   }
 
@@ -29,7 +42,7 @@ router.post('/', upload.single('file'), async (req, res) => {
     title,
     subject,
     deadline,
-    fileUrl: req.file?.path,
+    fileUrl: req.file.location,
     teacher: req.user.id
   });
 
