@@ -8,6 +8,12 @@ const router = express.Router();
 
 router.use(protect);
 
+router.get('/me', restrictTo('student'), async (req, res) => {
+  const student = await require('../models/Student').findOne({ user: req.user.id });
+  if (!student) return res.status(404).json({ message: 'Student not found' });
+  res.json(student);
+});
+
 // ✅ Populated user field here
 router.get('/', restrictTo('admin'), async (req, res) =>
   res.json(await Student.find().populate('user'))
