@@ -19,6 +19,27 @@ router.get('/me', restrictTo('student'), async (req, res) => {
   }
 });
 
+router.get('/marksheets', restrictTo('student'), async (req, res) => {
+  try {
+    const student = await Student.findOne({ user: req.user.id });
+    if (!student) return res.status(404).json({ message: 'Student not found' });
+
+    const marksheets = await Marksheet.find({ student: student._id });
+
+    // attach full URL to fileUrl
+    const host = `${req.protocol}://${req.get('host')}`;
+    const formatted = marksheets.map(m => ({
+      ...m.toObject(),
+      fileUrl: m.fileUrl?.startsWith('http') ? m.fileUrl : `${host}/${m.fileUrl}`
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    console.error('❌ Error loading student marksheets:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // ✅ Populated user field here
 router.get('/', restrictTo('admin'), async (req, res) =>
   res.json(await Student.find().populate('user'))
