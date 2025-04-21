@@ -23,19 +23,20 @@ router.use(protect);
 
 // GET lectures (role-based filter)
 // routes/lectures.js
+// routes/lectures.js
 router.get('/', async (req, res) => {
     try {
       const user = req.user;
 
-      // Admin: return all
       if (user.role === 'Admin') {
         const allLectures = await Lecture.find().sort({ createdAt: -1 });
         return res.json(allLectures);
       }
 
-      // Teacher: return lectures matching their subjects and classes
       if (user.role === 'Teacher') {
-        const teacher = await Teacher.findById(user.id);
+        const teacher = await Teacher.findOne({ user: user.userId });
+        if (!teacher) return res.status(404).json({ message: 'Teacher profile not found' });
+
         const lectures = await Lecture.find({
           subject: { $in: teacher.subjects },
           classSection: { $in: teacher.assignedClasses }
@@ -44,9 +45,10 @@ router.get('/', async (req, res) => {
         return res.json(lectures);
       }
 
-      // Student: return lectures matching their class
       if (user.role === 'Student') {
-        const student = await Student.findById(user.id);
+        const student = await Student.findOne({ user: user.userId });
+        if (!student) return res.status(404).json({ message: 'Student profile not found' });
+
         const lectures = await Lecture.find({
           classSection: student.classSection
         }).sort({ createdAt: -1 });
@@ -57,9 +59,10 @@ router.get('/', async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     } catch (err) {
       console.error('Get lectures error:', err);
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ message: 'Server error', error: err.message });
     }
   });
+
 
 // POST upload lecture
 router.post('/', upload.single('video'), async (req, res) => {
