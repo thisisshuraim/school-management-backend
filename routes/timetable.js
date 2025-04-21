@@ -56,10 +56,13 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', upload.single('file'), async (req, res) => {
-  const t = await Timetable.create({
-    ...req.body,
+  const reqBody = req?.body;
+  const updatedReqBody = {
+    ...reqBody,
+    classSection: reqBody?.classSection?.toUpperCase(),
     fileUrl: decodeURIComponent(req.file.location)
-  });
+  };
+  const t = await Timetable.create(updatedReqBody);
   res.status(201).json(t);
 });
 

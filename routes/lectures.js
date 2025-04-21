@@ -7,6 +7,7 @@ const { protect } = require('../middleware/auth');
 const s3 = require('../utils/s3');
 const Teacher = require('../models/Teacher');
 const Student = require('../models/Student');
+const { capitalize } = require('../utils/formatter');
 
 const router = express.Router();
 
@@ -75,8 +76,8 @@ router.post('/', upload.single('video'), async (req, res) => {
 
   const lecture = await Lecture.create({
     classSection: classSection.trim().toUpperCase(),
-    title,
-    subject: subject.trim().toLowerCase(),
+    title : capitalize(title),
+    subject: capitalize(subject),
     videoUrl: decodeURIComponent(req.file.location),
     teacher: req.user.id
   });

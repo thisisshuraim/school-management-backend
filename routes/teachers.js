@@ -2,6 +2,7 @@ const express = require('express');
 const Teacher = require('../models/Teacher');
 const Student = require('../models/Student');
 const { protect, restrictTo } = require('../middleware/auth');
+const { capitalize } = require('../utils/formatter');
 
 const router = express.Router();
 router.use(protect);
@@ -24,18 +25,26 @@ router.post('/', restrictTo('admin'), async (req, res) => {
 
   const teacher = await Teacher.create({
     user,
-    subjects,
-    assignedClasses,
+    subjects : subjects?.map(s => capitalize(s)),
+    assignedClasses : assignedClasses?.map(c => c.toUpperCase()),
     classTeacher,
-    classTeacherClass,
-    name
+    classTeacherClass : classTeacherClass?.toUpperCase(),
+    name : capitalize(name)
   });
   const populated = await teacher.populate('user');
   res.status(201).json(populated);
 });
 
 router.put('/:id', restrictTo('admin'), async (req, res) => {
-  const updated = await Teacher.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('user');
+  const reqBody = req?.body;
+  const updatedReqBody = {
+    ...reqBody,
+    subjects : reqBody?.subjects?.map(s => capitalize(s)),
+    assignedClasses : reqBody?.assignedClasses?.map(c => c.toUpperCase()),
+    classTeacherClass : reqBody?.classTeacherClass?.toUpperCase(),
+    name : capitalize(reqBody?.name)
+  }
+  const updated = await Teacher.findByIdAndUpdate(req.params.id, updatedReqBody, { new: true }).populate('user');
   res.json(updated);
 });
 

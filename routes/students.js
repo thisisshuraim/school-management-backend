@@ -4,6 +4,7 @@ const Assignment = require('../models/Assignment');
 const Marksheet = require('../models/Marksheet');
 const Timetable = require('../models/Timetable');
 const { protect, restrictTo } = require('../middleware/auth');
+const { capitalize } = require('../utils/formatter');
 const router = express.Router();
 
 router.use(protect);
@@ -29,13 +30,25 @@ router.get('/', restrictTo('admin'), async (req, res) =>
   res.json(await Student.find().populate('user'))
 );
 
-router.post('/', restrictTo('admin'), async (req, res) =>
-  res.status(201).json(await Student.create(req.body))
-);
+router.post('/', restrictTo('admin'), async (req, res) => {
+  const reqBody = req?.body;
+  const updatedReqBody = {
+    ...reqBody,
+    name : capitalize(reqBody?.name),
+    classSection : reqBody?.classSection?.toUpperCase()
+  };
+  res.status(201).json(await Student.create(updatedReqBody));
+});
 
-router.put('/:id', restrictTo('admin'), async (req, res) =>
-  res.json(await Student.findByIdAndUpdate(req.params.id, req.body, { new: true }))
-);
+router.put('/:id', restrictTo('admin'), async (req, res) => {
+  const reqBody = req?.body;
+  const updatedReqBody = {
+    ...reqBody,
+    name : capitalize(reqBody?.name),
+    classSection : reqBody?.classSection?.toUpperCase()
+  };
+  res.json(await Student.findByIdAndUpdate(req.params.id, updatedReqBody, { new: true }))
+});
 
 router.delete('/:id', restrictTo('admin'), async (req, res) =>
   res.json(await Student.findByIdAndDelete(req.params.id))

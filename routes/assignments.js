@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const Assignment = require('../models/Assignment');
 const { protect } = require('../middleware/auth');
 const s3 = require('../utils/s3');
+const { capitalize } = require('../utils/formatter');
 
 const router = express.Router();
 
@@ -37,9 +38,9 @@ router.post('/', upload.single('file'), async (req, res) => {
   }
 
   const assignment = await Assignment.create({
-    classSection,
-    title,
-    subject,
+    classSection : classSection.trim().toUpperCase(),
+    title : capitalize(title),
+    subject : capitalize(subject),
     deadline,
     fileUrl: decodeURIComponent(req.file.location),
     teacher: req.user.id
@@ -54,7 +55,7 @@ router.put('/:id', async (req, res) => {
 
   const updated = await Assignment.findOneAndUpdate(
     { _id: req.params.id, teacher: req.user.id },
-    { title, subject, deadline },
+    { title : capitalize(title), subject : capitalize(subject), deadline },
     { new: true }
   );
 
