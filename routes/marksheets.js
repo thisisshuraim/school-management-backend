@@ -20,6 +20,16 @@ const upload = multer({
   })
 });
 
+router.get('/my', protect, restrictTo('student'), async (req, res) => {
+  try {
+    const ms = await Marksheet.find({ user: req.user.id }).sort({ createdAt: -1 });
+    res.json(ms);
+  } catch (err) {
+    console.error('Get my marksheets error:', err);
+    res.status(500).json({ message: 'Failed to load marksheets', error: err.message });
+  }
+});
+
 router.use(protect, restrictTo('admin'));
 
 router.get('/', async (req, res) => {

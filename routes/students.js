@@ -51,19 +51,4 @@ router.get('/assignments', restrictTo('student'), async (req, res) => {
   res.json(await Assignment.find({ classSection: s.classSection }));
 });
 
-router.get('/marksheets', restrictTo('student'), async (req, res) => {
-  try {
-    const marksheets = await Marksheet.find({ user: req.user.id }).sort({ createdAt: -1 });
-
-    if (!marksheets.length) {
-      return res.status(404).json({ message: 'No marksheet found' });
-    }
-
-    res.json(marksheets);
-  } catch (err) {
-    console.error('Failed to fetch student marksheet:', err);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
 module.exports = router;
