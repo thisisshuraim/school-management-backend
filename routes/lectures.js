@@ -22,24 +22,44 @@ const upload = multer({
 router.use(protect);
 
 // GET lectures (role-based filter)
+// routes/lectures.js
 router.get('/', async (req, res) => {
-  const { role, userId } = req.user;
-  let filter = {};
+    try {
+      const user = req.user;
 
-  if (role === 'student') {
-    const student = await require('../models/Student').findOne({ user: userId });
-    if (!student) return res.status(403).json({ message: 'Not a student' });
-    filter.classSection = student.classSection;
-  } else if (role === 'teacher') {
-    const teacher = await require('../models/Teacher').findOne({ user: userId });
-    if (!teacher) return res.status(403).json({ message: 'Not a teacher' });
-    filter.classSection = { $in: teacher.assignedClasses };
-    filter.subject = { $in: teacher.subjects };
-  }
+      // Admin: return all
+      if (user.role === 'Admin') {
+        const allLectures = await Lecture.find().sort({ createdAt: -1 });
+        return res.json(allLectures);
+      }
 
-  const lectures = await Lecture.find(filter).sort({ createdAt: -1 });
-  res.json(lectures);
-});
+      // Teacher: return lectures matching their subjects and classes
+      if (user.role === 'Teacher') {
+        const teacher = await Teacher.findById(user.id);
+        const lectures = await Lecture.find({
+          subject: { $in: teacher.subjects },
+          classSection: { $in: teacher.assignedClasses }
+        }).sort({ createdAt: -1 });
+
+        return res.json(lectures);
+      }
+
+      // Student: return lectures matching their class
+      if (user.role === 'Student') {
+        const student = await Student.findById(user.id);
+        const lectures = await Lecture.find({
+          classSection: student.classSection
+        }).sort({ createdAt: -1 });
+
+        return res.json(lectures);
+      }
+
+      return res.status(403).json({ message: 'Access denied' });
+    } catch (err) {
+      console.error('Get lectures error:', err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
 
 // POST upload lecture
 router.post('/', upload.single('video'), async (req, res) => {
