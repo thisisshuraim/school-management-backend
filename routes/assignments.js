@@ -41,7 +41,7 @@ router.post('/', upload.single('file'), async (req, res) => {
     title,
     subject,
     deadline,
-    fileUrl: req.file.location,
+    fileUrl: decodeURIComponent(req.file.location),
     teacher: req.user.id
   });
 
