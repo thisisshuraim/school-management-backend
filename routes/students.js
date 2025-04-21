@@ -52,8 +52,7 @@ router.get('/assignments', restrictTo('student'), async (req, res) => {
 });
 
 router.get('/marksheets', restrictTo('student'), async (req, res) => {
-  const s = await Student.findOne({ user: req.user.id });
-  res.json(await Marksheet.find({ student: s._id }));
+  res.json(await Marksheet.find({ user: req.user.id }).sort({ createdAt: -1 }));
 });
 
 module.exports = router;
