@@ -5,6 +5,8 @@ const { v4: uuidv4 } = require('uuid');
 const Lecture = require('../models/Lecture');
 const { protect } = require('../middleware/auth');
 const s3 = require('../utils/s3');
+const Teacher = require('../models/Teacher');
+const Student = require('../models/Student');
 
 const router = express.Router();
 
@@ -21,94 +23,90 @@ const upload = multer({
 
 router.use(protect);
 
-// GET lectures (role-based filter)
-// routes/lectures.js
-// routes/lectures.js
+// GET all lectures
 router.get('/', async (req, res) => {
-    try {
-      const user = req.user;
+  try {
+    const role = req.user.role?.toLowerCase();
+    const userId = req.user._id;
 
-      if (user.role === 'Admin') {
-        const lectures = await Lecture.find().sort({ createdAt: -1 });
-        return res.json(lectures);
-      }
-
-      if (user.role === 'Teacher') {
-        const teacher = await Teacher.findOne({ user: user.userId }).lean();
-        if (!teacher) {
-          return res.status(404).json({ message: 'Teacher profile not found' });
-        }
-
-        const lectures = await Lecture.find({
-          subject: { $in: teacher.subjects || [] },
-          classSection: { $in: teacher.assignedClasses || [] }
-        }).sort({ createdAt: -1 });
-
-        return res.json(lectures);
-      }
-
-      if (user.role === 'Student') {
-        const student = await Student.findOne({ user: user.userId }).lean();
-        if (!student) {
-          return res.status(404).json({ message: 'Student profile not found' });
-        }
-
-        const lectures = await Lecture.find({
-          classSection: student.classSection
-        }).sort({ createdAt: -1 });
-
-        return res.json(lectures);
-      }
-
-      res.status(403).json({ message: 'Access denied' });
-    } catch (err) {
-      console.error('Error in GET /lectures:', err);
-      res.status(500).json({ message: 'Server error', error: err.message });
+    if (role === 'admin') {
+      const lectures = await Lecture.find().sort({ createdAt: -1 });
+      return res.json(lectures);
     }
-  });
 
+    if (role === 'teacher') {
+      const teacher = await Teacher.findOne({ user: userId }).lean();
+      if (!teacher) return res.status(404).json({ message: 'Teacher profile not found' });
 
-// POST upload lecture
-router.post('/', upload.single('video'), async (req, res) => {
-  const { title, subject, classSection } = req.body;
+      const lectures = await Lecture.find({
+        subject: { $in: teacher.subjects || [] },
+        classSection: { $in: teacher.assignedClasses || [] }
+      }).sort({ createdAt: -1 });
 
-  if (!title || !subject || !classSection || !req.file) {
-    return res.status(400).json({ message: 'Missing required fields' });
+      return res.json(lectures);
+    }
+
+    if (role === 'student') {
+      const student = await Student.findOne({ user: userId }).lean();
+      if (!student) return res.status(404).json({ message: 'Student profile not found' });
+
+      const lectures = await Lecture.find({
+        classSection: student.classSection
+      }).sort({ createdAt: -1 });
+
+      return res.json(lectures);
+    }
+
+    res.status(403).json({ message: 'Access denied' });
+  } catch (err) {
+    console.error('GET /lectures error:', err);
+    res.status(500).json({ message: 'Failed to fetch lectures', error: err.message });
   }
-
-  const lecture = await Lecture.create({
-    title,
-    subject,
-    classSection,
-    videoUrl: decodeURIComponent(req.file.location),
-    uploadedBy: req.user.id
-  });
-
-  res.status(201).json(lecture);
 });
 
-// DELETE lecture
-router.delete('/:id', async (req, res) => {
+// POST new lecture
+router.post('/', upload.single('video'), async (req, res) => {
   try {
-    const lecture = await Lecture.findById(req.params.id);
-    if (!lecture) return res.status(404).json({ message: 'Lecture not found' });
+    const { classSection, title, subject } = req.body;
 
-    const isAdmin = req.user.role === 'admin';
-    const isOwner = String(lecture.uploadedBy) === req.user.id;
-    if (!isAdmin && !isOwner) {
-      return res.status(403).json({ message: 'Not authorized' });
+    if (!classSection || !title || !subject || !req.file) {
+      return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    const key = new URL(lecture.videoUrl).pathname.slice(1);
+    const lecture = await Lecture.create({
+      classSection,
+      title,
+      subject,
+      videoUrl: decodeURIComponent(req.file.location),
+      teacher: req.user.id
+    });
+
+    res.status(201).json(lecture);
+  } catch (err) {
+    console.error('POST /lectures error:', err);
+    res.status(500).json({ message: 'Upload failed', error: err.message });
+  }
+});
+
+// DELETE lecture (only if teacher uploaded it or admin)
+router.delete('/:id', async (req, res) => {
+  try {
+    const role = req.user.role?.toLowerCase();
+    const query = role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, teacher: req.user.id };
+
+    const record = await Lecture.findOne(query);
+    if (!record) return res.status(404).json({ message: 'Lecture not found' });
+
+    const key = new URL(record.videoUrl).pathname.slice(1);
     await s3.deleteObject({
       Bucket: 'school-management-thisisshuraim',
       Key: key
     }).promise();
 
-    await Lecture.findByIdAndDelete(req.params.id);
-    res.json({ success: true });
+    const deleted = await Lecture.findByIdAndDelete(record._id);
+    res.json(deleted);
   } catch (err) {
-    console.error('Delete lecture error:', err);
+    console.error('DELETE /lectures error:', err);
     res.status(500).json({ message: 'Delete failed', error: err.message });
   }
 });
