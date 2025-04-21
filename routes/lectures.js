@@ -35,16 +35,21 @@ router.get('/', async (req, res) => {
     }
 
     if (role === 'teacher') {
-      const teacher = await Teacher.findOne({ user: userId }).lean();
-      if (!teacher) return res.status(404).json({ message: 'Teacher profile not found' });
+        const teacher = await Teacher.findOne({ user: userId }).lean();
 
-      const lectures = await Lecture.find({
-        subject: { $in: teacher.subjects || [] },
-        classSection: { $in: teacher.assignedClasses || [] }
-      }).sort({ createdAt: -1 });
+        // Don't crash, just return empty list if profile not found
+        if (!teacher || !teacher.subjects?.length || !teacher.assignedClasses?.length) {
+            return res.json([]);
+        }
 
-      return res.json(lectures);
-    }
+        const lectures = await Lecture.find({
+            subject: { $in: teacher.subjects },
+            classSection: { $in: teacher.assignedClasses }
+        }).sort({ createdAt: -1 });
+
+        return res.json(lectures);
+        }
+
 
     if (role === 'student') {
       const student = await Student.findOne({ user: userId }).lean();
