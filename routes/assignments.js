@@ -61,10 +61,24 @@ router.put('/:id', async (req, res) => {
   res.json(updated);
 });
 
-// DELETE an assignment
 router.delete('/:id', async (req, res) => {
-  const result = await Assignment.findOneAndDelete({ _id: req.params.id, teacher: req.user.id });
-  res.json(result);
+  try {
+    const record = await Assignment.findOne({ _id: req.params.id, teacher: req.user.id });
+    if (!record) return res.status(404).json({ message: 'Assignment not found' });
+
+    const key = new URL(record.fileUrl).pathname.slice(1);
+
+    await s3.deleteObject({
+      Bucket: 'school-management-thisisshuraim',
+      Key: key
+    }).promise();
+
+    const deleted = await Assignment.findByIdAndDelete(req.params.id);
+    res.json(deleted);
+  } catch (err) {
+    console.error('Delete assignment error:', err);
+    res.status(500).json({ message: 'Delete failed', error: err.message });
+  }
 });
 
 module.exports = router;

@@ -1,12 +1,26 @@
+// routes/timetable.js
 const express = require('express');
 const multer = require('multer');
+const multerS3 = require('multer-s3');
+const { v4: uuidv4 } = require('uuid');
 const Timetable = require('../models/Timetable');
 const { protect, restrictTo } = require('../middleware/auth');
+const s3 = require('../utils/s3');
 
-const upload = multer({ dest: 'uploads/' });
 const router = express.Router();
 
-// Public route for students & class teachers (must come BEFORE admin middleware)
+const upload = multer({
+  storage: multerS3({
+    s3,
+    bucket: 'school-management-thisisshuraim',
+    key: (req, file, cb) => {
+      const filename = `timetables/${uuidv4()}-${file.originalname}`;
+      cb(null, filename);
+    }
+  })
+});
+
+// Public route for students & class teachers
 router.get('/my', protect, async (req, res) => {
   const user = req.user;
   let classSection = null;
@@ -30,8 +44,7 @@ router.get('/my', protect, async (req, res) => {
   const tt = await Timetable.findOne({ classSection });
   if (!tt) return res.status(404).json({ message: 'Timetable not uploaded yet' });
 
-  const host = `${req.protocol}://${req.get('host')}`;
-  res.json({ ...tt.toObject(), fileUrl: `${host}/${tt.fileUrl}` });
+  res.json({ ...tt.toObject() });
 });
 
 // Admin-only routes
@@ -39,23 +52,35 @@ router.use(protect, restrictTo('admin'));
 
 router.get('/', async (req, res) => {
   const items = await Timetable.find();
-  const host = `${req.protocol}://${req.get('host')}`;
-  const enhanced = items.map((t) => ({
-    ...t.toObject(),
-    fileUrl: `${host}/${t.fileUrl}`
-  }));
-  res.json(enhanced);
+  res.json(items);
 });
 
 router.post('/', upload.single('file'), async (req, res) => {
-  const fileUrl = `uploads/${req.file?.filename}`;
-  const t = await Timetable.create({ ...req.body, fileUrl });
+  const t = await Timetable.create({
+    ...req.body,
+    fileUrl: decodeURIComponent(req.file.location)
+  });
   res.status(201).json(t);
 });
 
 router.delete('/:id', async (req, res) => {
-  const deleted = await Timetable.findByIdAndDelete(req.params.id);
-  res.json(deleted);
+  try {
+    const record = await Timetable.findById(req.params.id);
+    if (!record) return res.status(404).json({ message: 'Timetable not found' });
+
+    const key = new URL(record.fileUrl).pathname.slice(1);
+
+    await s3.deleteObject({
+      Bucket: 'school-management-thisisshuraim',
+      Key: key
+    }).promise();
+
+    const deleted = await Timetable.findByIdAndDelete(req.params.id);
+    res.json(deleted);
+  } catch (err) {
+    console.error('Delete timetable error:', err);
+    res.status(500).json({ message: 'Delete failed', error: err.message });
+  }
 });
 
 module.exports = router;
