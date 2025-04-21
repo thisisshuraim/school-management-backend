@@ -13,7 +13,6 @@ const upload = multer({
   storage: multerS3({
     s3,
     bucket: 'school-management-thisisshuraim',
-    acl: 'public-read',
     key: (req, file, cb) => {
       const filename = `assignments/${uuidv4()}-${file.originalname}`;
       cb(null, filename);
