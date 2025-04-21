@@ -39,8 +39,8 @@ router.get('/', async (req, res) => {
       const teacher = await Teacher.findOne({ user: userId });
       if (!teacher) return res.status(404).json({ message: 'Teacher not found' });
 
-      const assignedClasses = teacher.assignedClasses.map(cls => cls.trim().toUpperCase());
-      const subjects = teacher.subjects.map(s => s.trim().toLowerCase());
+      const assignedClasses = teacher?.assignedClasses;
+      const subjects = teacher?.subjects;
 
       const lectures = await Lecture.find({
         classSection: { $in: assignedClasses },
