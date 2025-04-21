@@ -27,7 +27,7 @@ router.use(protect);
 router.get('/', async (req, res) => {
   try {
     const role = req.user.role?.toLowerCase();
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     if (role === 'admin') {
       const lectures = await Lecture.find();
