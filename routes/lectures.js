@@ -29,25 +29,29 @@ router.get('/', async (req, res) => {
       const user = req.user;
 
       if (user.role === 'Admin') {
-        const allLectures = await Lecture.find().sort({ createdAt: -1 });
-        return res.json(allLectures);
+        const lectures = await Lecture.find().sort({ createdAt: -1 });
+        return res.json(lectures);
       }
 
       if (user.role === 'Teacher') {
-        const teacher = await Teacher.findOne({ user: user.userId });
-        if (!teacher) return res.status(404).json({ message: 'Teacher profile not found' });
+        const teacher = await Teacher.findOne({ user: user.userId }).lean();
+        if (!teacher) {
+          return res.status(404).json({ message: 'Teacher profile not found' });
+        }
 
         const lectures = await Lecture.find({
-          subject: { $in: teacher.subjects },
-          classSection: { $in: teacher.assignedClasses }
+          subject: { $in: teacher.subjects || [] },
+          classSection: { $in: teacher.assignedClasses || [] }
         }).sort({ createdAt: -1 });
 
         return res.json(lectures);
       }
 
       if (user.role === 'Student') {
-        const student = await Student.findOne({ user: user.userId });
-        if (!student) return res.status(404).json({ message: 'Student profile not found' });
+        const student = await Student.findOne({ user: user.userId }).lean();
+        if (!student) {
+          return res.status(404).json({ message: 'Student profile not found' });
+        }
 
         const lectures = await Lecture.find({
           classSection: student.classSection
@@ -56,9 +60,9 @@ router.get('/', async (req, res) => {
         return res.json(lectures);
       }
 
-      return res.status(403).json({ message: 'Access denied' });
+      res.status(403).json({ message: 'Access denied' });
     } catch (err) {
-      console.error('Get lectures error:', err);
+      console.error('Error in GET /lectures:', err);
       res.status(500).json({ message: 'Server error', error: err.message });
     }
   });
