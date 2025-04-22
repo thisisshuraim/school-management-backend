@@ -1,4 +1,5 @@
 // mongo_seed_script.js
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
@@ -12,102 +13,111 @@ const Marksheet = require('./models/Marksheet');
 const Timetable = require('./models/Timetable');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/school-management';
+const subjects = ['Math', 'Science', 'English', 'History', 'Geography', 'Physics', 'Chemistry', 'Biology'];
+const classSections = ['5A', '5B', '5C', '6A', '6B'];
 
-const videoUrl = 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-const imageUrl = 'https://picsum.photos/200/300';
-const pdfUrl = 'https://s2.q4cdn.com/175719177/files/doc_presentations/Placeholder-PDF.pdf';
+const pdfPlaceholder = 'https://s2.q4cdn.com/175719177/files/doc_presentations/Placeholder-PDF.pdf';
+const imagePlaceholder = 'https://picsum.photos/200/300';
+const videoPlaceholder = 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
 
-const seedData = async () => {
-  try {
-    await mongoose.connect(MONGO_URI);
-    console.log('Connected to MongoDB');
+const hashPassword = (plain) => bcrypt.hashSync(plain, 10);
 
-    await Promise.all([
-      User.deleteMany(), Student.deleteMany(), Teacher.deleteMany(),
-      Assignment.deleteMany(), Lecture.deleteMany(), Marksheet.deleteMany(), Timetable.deleteMany()
-    ]);
+async function seedData() {
+  await mongoose.connect(MONGO_URI);
+  console.log('Connected to DB');
 
-    const roles = ['admin', 'teacher', 'student'];
-    const subjects = ['Math', 'Science', 'English', 'History'];
-    const classSections = ['5A', '5B', '5C'];
+  await User.deleteMany();
+  await Student.deleteMany();
+  await Teacher.deleteMany();
+  await Assignment.deleteMany();
+  await Lecture.deleteMany();
+  await Marksheet.deleteMany();
+  await Timetable.deleteMany();
 
-    // Create Admin User
-    const admin = await User.create({
-      username: 'admin',
-      password: bcrypt.hashSync('admin123', 10),
-      role: 'admin'
-    });
+  const admin = await User.create({ username: 'admin', password: hashPassword('admin123'), role: 'admin' });
 
-    // Create Teachers
-    const teachers = await Promise.all(Array.from({ length: 10 }).map((_, i) => {
-      const username = `teacher${i + 1}`;
-      const user = new User({ username, password: bcrypt.hashSync('pass123', 10), role: 'teacher' });
-      return user.save();
-    }));
-
-    const teacherDocs = await Promise.all(teachers.map((user, i) => {
-      const assigned = [classSections[i % 3]];
-      const teachSubjects = [subjects[i % subjects.length]];
-      return Teacher.create({ name: `Teacher ${i + 1}`, user: user._id, assignedClasses: assigned, subjects: teachSubjects });
-    }));
-
-    // Create Students
-    const students = await Promise.all(Array.from({ length: 20 }).map((_, i) => {
-      const username = `student${i + 1}`;
-      const user = new User({ username, password: bcrypt.hashSync('pass123', 10), role: 'student' });
-      return user.save();
-    }));
-
-    const studentDocs = await Promise.all(students.map((user, i) => {
-      const section = classSections[i % classSections.length];
-      return Student.create({ name: `Student ${i + 1}`, classSection: section, user: user._id });
-    }));
-
-    // Create Assignments
-    for (let i = 0; i < 10; i++) {
-      await Assignment.create({
-        title: `Assignment ${i + 1}`,
-        classSection: classSections[i % classSections.length],
-        subject: subjects[i % subjects.length],
-        deadline: new Date(Date.now() + 7 * 86400000),
-        fileUrl: pdfUrl,
-        teacher: teacherDocs[i % teacherDocs.length].user
-      });
-    }
-
-    // Create Lectures
-    for (let i = 0; i < 10; i++) {
-      await Lecture.create({
-        title: `Lecture ${i + 1}`,
-        classSection: classSections[i % classSections.length],
-        subject: subjects[i % subjects.length],
-        videoUrl: videoUrl,
-        teacher: teacherDocs[i % teacherDocs.length].user
-      });
-    }
-
-    // Create Marksheets
-    for (let i = 0; i < 5; i++) {
-      await Marksheet.create({
-        student: studentDocs[i]._id,
-        fileUrl: imageUrl
-      });
-    }
-
-    // Create Timetables
-    for (let i = 0; i < classSections.length; i++) {
-      await Timetable.create({
-        classSection: classSections[i],
-        fileUrl: imageUrl
-      });
-    }
-
-    console.log('Seed data inserted successfully!');
-    process.exit(0);
-  } catch (err) {
-    console.error('Seeding error:', err);
-    process.exit(1);
+  const teacherUsers = [];
+  for (let i = 1; i <= 10; i++) {
+    const user = await User.create({ username: `teacher${i}`, password: hashPassword('pass123'), role: 'teacher' });
+    teacherUsers.push(user);
   }
-};
 
-seedData();
+  const teacherDocs = [];
+  for (let i = 0; i < 10; i++) {
+    const assignedSubjects = [subjects[i % subjects.length]];
+    const assignedClasses = [classSections[i % classSections.length]];
+    const teacher = await Teacher.create({
+      name: `Teacher ${i + 1}`,
+      subjects: assignedSubjects,
+      assignedClasses,
+      user: teacherUsers[i]._id
+    });
+    teacherDocs.push(teacher);
+  }
+
+  const studentUsers = [];
+  for (let i = 1; i <= 20; i++) {
+    const user = await User.create({ username: `student${i}`, password: hashPassword('pass123'), role: 'student' });
+    studentUsers.push(user);
+  }
+
+  const studentDocs = [];
+  for (let i = 0; i < 20; i++) {
+    const classSection = classSections[i % classSections.length];
+    const student = await Student.create({
+      name: `Student ${i + 1}`,
+      classSection,
+      user: studentUsers[i]._id
+    });
+    studentDocs.push(student);
+  }
+
+  for (let i = 0; i < 20; i++) {
+    const classSection = classSections[i % classSections.length];
+    const subject = subjects[i % subjects.length];
+    await Assignment.create({
+      classSection,
+      title: `Assignment ${i + 1}`,
+      subject,
+      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      fileUrl: pdfPlaceholder,
+      teacher: teacherDocs[i % teacherDocs.length].user
+    });
+  }
+
+  for (let i = 0; i < 20; i++) {
+    const classSection = classSections[i % classSections.length];
+    const subject = subjects[i % subjects.length];
+    await Lecture.create({
+      classSection,
+      title: `Lecture ${i + 1}`,
+      subject,
+      videoUrl: videoPlaceholder,
+      teacher: teacherDocs[i % teacherDocs.length].user
+    });
+  }
+
+  for (let i = 0; i < 20; i++) {
+    await Marksheet.create({
+      title: `Marksheet ${i + 1}`,
+      fileUrl: imagePlaceholder,
+      user: studentDocs[i % studentDocs.length].user
+    });
+  }
+
+  for (let i = 0; i < classSections.length; i++) {
+    await Timetable.create({
+      classSection: classSections[i],
+      fileUrl: imagePlaceholder,
+      teacher: teacherDocs[i % teacherDocs.length].user
+    });
+  }
+
+  console.log('Seeding complete');
+  process.exit();
+}
+
+seedData().catch(err => {
+  console.error('Seeding error:', err);
+  process.exit(1);
+});
