@@ -14,8 +14,9 @@ router.post('/login', async (req, res) => {
 
 router.post('/register', async (req, res) => {
   const { username, password, role } = req.body;
+  const isBlocked = req?.body?.isBlocked ? req?.body?.isBlocked : false;
   const hashed = bcrypt.hashSync(password, 10);
-  const user = await User.create({ username : username?.toLowerCase(), password: hashed, role });
+  const user = await User.create({ username : username?.toLowerCase(), password: hashed, role, isBlocked });
   res.status(201).json(user);
 });
 
