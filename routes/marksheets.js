@@ -35,12 +35,17 @@ router.use(protect, restrictTo('admin'));
 router.get('/', async (req, res) => {
   try {
     const all = await Marksheet.find().populate('user');
-    const mapped = all.map(m => ({
-      _id: m._id,
-      fileUrl: m.fileUrl,
-      createdAt: m.createdAt,
-      username: m.user?.username || 'unknown'
-    }));
+    const mapped = all.map(async (m) => {
+      const username = m.user?.username || 'unknown';
+      const user = await User.findOne({ username });
+      return {
+        _id: m._id,
+        fileUrl: m.fileUrl,
+        createdAt: m.createdAt,
+        user,
+        username: m.user?.username || 'unknown'
+      }
+    });
     res.json(mapped);
   } catch (err) {
     console.error('Fetch marksheets error:', err);
