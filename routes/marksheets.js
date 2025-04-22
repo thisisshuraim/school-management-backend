@@ -5,6 +5,7 @@ const multerS3 = require('multer-s3');
 const { v4: uuidv4 } = require('uuid');
 const Marksheet = require('../models/Marksheet');
 const User = require('../models/User');
+const Student = require('../models/Student');
 const { protect, restrictTo } = require('../middleware/auth');
 const s3 = require('../utils/s3');
 const router = express.Router();
@@ -38,11 +39,14 @@ router.get('/', async (req, res) => {
     const mapped = await Promise.all(all.map(async (m) => {
       const username = m.user?.username || 'unknown';
       const user = await User.findOne({ username });
+      const userId = user?._id;
+      const student = await Student.findById(userId);
       return {
         _id: m._id,
         fileUrl: m.fileUrl,
         createdAt: m.createdAt,
-        user,
+        fullName: student?.name,
+        classSection: student?.classSection,
         username
       };
     }));
