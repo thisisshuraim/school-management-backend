@@ -40,7 +40,7 @@ router.get('/', async (req, res) => {
       const username = m.user?.username || 'unknown';
       const user = await User.findOne({ username });
       const userId = user?._id;
-      const student = await Student.findById(userId);
+      const student = await Student.findOne({ user: userId });
       return {
         _id: m._id,
         fileUrl: m.fileUrl,
