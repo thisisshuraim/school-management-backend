@@ -25,8 +25,8 @@ router.put('/:id', async (req, res) => {
   const { username, password, role } = req.body;
   const isBlocked = req?.body?.isBlocked ? req?.body?.isBlocked : false;
   const hashed = bcrypt.hashSync(password, 10);
-  const user = await User.findByIdAndUpdate(req.params.id, { username : username?.toLowerCase(), password: hashed, role, isBlocked }, { new: true });
-  res.json(user);
+  const updatedReqBody = { username : username?.toLowerCase(), password: hashed, role, isBlocked }
+  res.json(await Student.findByIdAndUpdate(req.params.id, updatedReqBody, { new: true }));
 });
 
 router.delete('/:id', async (req, res) => {
