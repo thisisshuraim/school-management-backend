@@ -119,7 +119,7 @@ router.post('/admin', restrictTo('admin'), async (req, res) => {
 
   announcements.forEach(announcement => {
     global.io?.emit('new-announcement', announcement);
-    sendPushNotificationToClass(announcement.classSection, title);
+    sendPushNotificationToClass(announcement.classSection, announcement.title);
   });
 
   res.status(201).json({ success: true, created: announcements.length });
@@ -144,7 +144,7 @@ router.post('/teacher', restrictTo('teacher'), async (req, res) => {
   });
 
   global.io?.emit('new-announcement', announcement);
-  sendPushNotificationToClass(classSection.toUpperCase(), title);
+  sendPushNotificationToClass(announcement.classSection, announcement.title);
 
   res.status(201).json(announcement);
 });
