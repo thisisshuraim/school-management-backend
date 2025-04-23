@@ -6,7 +6,7 @@ const LectureSchema = new mongoose.Schema({
   classSection: { type: String, required: true },
   subject: { type: String, required: true },
   videoUrl: { type: String, required: true },
-  teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Lecture', LectureSchema);
