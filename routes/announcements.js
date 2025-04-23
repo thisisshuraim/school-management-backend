@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
     return res.json(
       all.map(a => ({
         ...a.toObject(),
-        read: a.readBy?.map(id => id.toString()).includes(user._id?.toString())
+        read: a.readBy?.some(id => id.toString() === user._id.toString())
       }))
     );
   }
@@ -33,12 +33,11 @@ router.get('/', async (req, res) => {
     classSections = [student?.classSection];
   }
 
-  const relevant = await Announcement.find({ classSection: { $in: classSections } })
-    .sort({ createdAt: -1 });
+  const relevant = await Announcement.find({ classSection: { $in: classSections } }).sort({ createdAt: -1 });
 
   const annotated = relevant.map(a => ({
     ...a.toObject(),
-    read: a.readBy?.map(id => id.toString()).includes(user._id?.toString())
+    read: a.readBy?.some(id => id.toString() === user._id.toString())
   }));
 
   res.json(annotated);
