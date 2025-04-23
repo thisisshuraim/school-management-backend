@@ -7,6 +7,7 @@ const announcementSchema = new mongoose.Schema({
   classSection: { type: String, required: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   createdByName: { type: String, required: true },
+  readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Announcement', announcementSchema);

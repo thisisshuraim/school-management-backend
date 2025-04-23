@@ -34,6 +34,18 @@ router.get('/', async (req, res) => {
   res.json(relevant);
 });
 
+router.post('/:id/read', protect, async (req, res) => {
+  const announcement = await Announcement.findById(req.params.id);
+  if (!announcement) return res.status(404).json({ message: 'Not found' });
+
+  if (!announcement.readBy.includes(req.user.id)) {
+    announcement.readBy.push(req.user.id);
+    await announcement.save();
+  }
+
+  res.json({ success: true });
+});
+
 router.post('/admin', restrictTo('admin'), async (req, res) => {
   const { title, message, classSection } = req.body;
   if (!message || !classSection) {
