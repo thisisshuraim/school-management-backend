@@ -10,37 +10,54 @@ const router = express.Router();
 router.use(protect);
 
 router.get('/', async (req, res) => {
-  const user = req.user;
-  let classSections = [];
+  try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
 
-  if (user.role === 'admin') {
-    const all = await Announcement.find().sort({ createdAt: -1 });
-    return res.json(
-      all.map(a => ({
+    const user = req.user;
+    let classSections = [];
+
+    if (user.role === 'admin') {
+      const all = await Announcement.find().sort({ createdAt: -1 });
+      const annotated = all.map(a => ({
         ...a.toObject(),
-        read: a.readBy?.some(id => id.toString() === user._id.toString())
-      }))
-    );
+        read:
+          Array.isArray(a.readBy) &&
+          a.readBy.some(id =>
+            id && user._id && id.toString?.() === user._id.toString?.()
+          )
+      }));
+      return res.json(annotated);
+    }
+
+    if (user.role === 'teacher') {
+      const teacher = await Teacher.findOne({ user: user.id });
+      classSections = teacher?.assignedClasses || [];
+    }
+
+    if (user.role === 'student') {
+      const student = await Student.findOne({ user: user.id });
+      classSections = [student?.classSection];
+    }
+
+    const relevant = await Announcement.find({
+      classSection: { $in: classSections }
+    }).sort({ createdAt: -1 });
+
+    const annotated = relevant.map(a => ({
+      ...a.toObject(),
+      read:
+        Array.isArray(a.readBy) &&
+        a.readBy.some(id =>
+          id && user._id && id.toString?.() === user._id.toString?.()
+        )
+    }));
+
+    res.json(annotated);
+  } catch (err) {
+    res.status(500).json({ message: 'Internal Server Error', error: err.message });
   }
-
-  if (user.role === 'teacher') {
-    const teacher = await Teacher.findOne({ user: user.id });
-    classSections = teacher?.assignedClasses || [];
-  }
-
-  if (user.role === 'student') {
-    const student = await Student.findOne({ user: user.id });
-    classSections = [student?.classSection];
-  }
-
-  const relevant = await Announcement.find({ classSection: { $in: classSections } }).sort({ createdAt: -1 });
-
-  const annotated = relevant.map(a => ({
-    ...a.toObject(),
-    read: a.readBy?.some(id => id.toString() === user._id.toString())
-  }));
-
-  res.json(annotated);
 });
 
 
