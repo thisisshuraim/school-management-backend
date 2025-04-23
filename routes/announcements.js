@@ -25,7 +25,7 @@ router.get('/', async (req, res) => {
         read:
           Array.isArray(a.readBy) &&
           a.readBy.some(id =>
-            id && user._id && id.toString?.() === user._id.toString?.()
+            id && user.id && id.toString?.() === user.id.toString?.()
           )
       }));
       return res.json(annotated);
