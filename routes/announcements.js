@@ -11,7 +11,7 @@ router.use(protect);
 
 router.get('/', async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
+    if (!req.user || !req.user.id) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
@@ -50,7 +50,7 @@ router.get('/', async (req, res) => {
       read:
         Array.isArray(a.readBy) &&
         a.readBy.some(id =>
-          id && user._id && id.toString?.() === user._id.toString?.()
+          id && user.id && id.toString?.() === user.id.toString?.()
         )
     }));
 
