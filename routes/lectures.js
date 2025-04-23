@@ -24,7 +24,6 @@ const upload = multer({
 
 router.use(protect);
 
-// GET all lectures
 router.get('/', async (req, res) => {
   try {
     const role = req.user.role?.toLowerCase();
@@ -66,7 +65,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST a new lecture
 router.post('/', upload.single('video'), async (req, res) => {
   const { classSection, title, subject } = req.body;
 
@@ -85,7 +83,6 @@ router.post('/', upload.single('video'), async (req, res) => {
   res.status(201).json(lecture);
 });
 
-// DELETE lecture
 router.delete('/:id', async (req, res) => {
   try {
     const role = req.user.role?.toLowerCase();

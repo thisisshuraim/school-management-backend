@@ -1,4 +1,3 @@
-// routes/timetable.js
 const express = require('express');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
@@ -20,7 +19,6 @@ const upload = multer({
   })
 });
 
-// Public route for students & class teachers
 router.get('/my', protect, async (req, res) => {
   const user = req.user;
   let classSection = null;
@@ -47,7 +45,6 @@ router.get('/my', protect, async (req, res) => {
   res.json({ ...tt.toObject() });
 });
 
-// Admin-only routes
 router.use(protect, restrictTo('admin'));
 
 router.get('/', async (req, res) => {

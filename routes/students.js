@@ -25,7 +25,6 @@ router.get('/my', protect, restrictTo('student'), async (req, res) => {
   res.json(ms);
 });
 
-// ✅ Populated user field here
 router.get('/', restrictTo('admin'), async (req, res) =>
   res.json(await Student.find().populate('user'))
 );

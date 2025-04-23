@@ -5,9 +5,36 @@ const Student = require('../models/Student');
 const User = require('../models/User');
 const { protect, restrictTo } = require('../middleware/auth');
 const { capitalize } = require('../utils/formatter');
+const { Expo } = require('expo-server-sdk');
 
 const router = express.Router();
 router.use(protect);
+
+const sendPushNotificationToClass = async (classSection, title) => {
+  const students = await Student.find({ classSection }).populate('user');
+  const tokens = students
+    .map(s => s.user?.expoPushToken)
+    .filter(t => t && Expo.isExpoPushToken(t));
+
+  if (tokens.length === 0) return;
+
+  const expo = new Expo();
+  const messages = tokens.map(token => ({
+    to: token,
+    sound: 'default',
+    title: '📣 New Announcement',
+    body: `New announcement: ${title}`,
+  }));
+
+  const chunks = expo.chunkPushNotifications(messages);
+  for (const chunk of chunks) {
+    try {
+      await expo.sendPushNotificationsAsync(chunk);
+    } catch (err) {
+      console.error('Expo push error:', err);
+    }
+  }
+};
 
 router.get('/', async (req, res) => {
   try {
@@ -22,11 +49,7 @@ router.get('/', async (req, res) => {
       const all = await Announcement.find().sort({ createdAt: -1 });
       const annotated = all.map(a => ({
         ...a.toObject(),
-        read:
-          Array.isArray(a.readBy) &&
-          a.readBy.some(id =>
-            id && user.id && id.toString?.() === user.id.toString?.()
-          )
+        read: Array.isArray(a.readBy) && a.readBy.some(id => id?.toString() === user.id?.toString())
       }));
       return res.json(annotated);
     }
@@ -41,18 +64,12 @@ router.get('/', async (req, res) => {
       classSections = [student?.classSection];
     }
 
-    const relevant = await Announcement.find({
-      classSection: { $in: classSections }
-    }).sort({ createdAt: -1 });
+    const relevant = await Announcement.find({ classSection: { $in: classSections } }).sort({ createdAt: -1 });
 
-    const annotated = relevant.map(a => {
-      const readByIds = (a.readBy || []).map(id => id?.toString());
-      const userId = user.id?.toString();
-      return {
-        ...a.toObject(),
-        read: readByIds.includes(userId)
-      };
-    });
+    const annotated = relevant.map(a => ({
+      ...a.toObject(),
+      read: (a.readBy || []).some(id => id?.toString() === user.id?.toString())
+    }));
 
     res.json(annotated);
   } catch (err) {
@@ -60,20 +77,13 @@ router.get('/', async (req, res) => {
   }
 });
 
-
-router.post('/:id/read', protect, async (req, res) => {
+router.post('/:id/read', async (req, res) => {
   try {
     const announcement = await Announcement.findById(req.params.id);
-
-    if (!announcement) {
-      console.log('Announcement not found');
-      return res.status(404).json({ message: 'Announcement not found' });
-    }
+    if (!announcement) return res.status(404).json({ message: 'Not found' });
 
     const userId = req.user._id || req.user.id;
-    const alreadyRead = announcement.readBy.some(id => id.toString() === userId.toString());
-
-    if (!alreadyRead) {
+    if (!announcement.readBy.some(id => id.toString() === userId.toString())) {
       announcement.readBy.push(userId);
       await announcement.save();
     }
@@ -107,6 +117,11 @@ router.post('/admin', restrictTo('admin'), async (req, res) => {
     )
   );
 
+  announcements.forEach(announcement => {
+    global.io?.emit('new-announcement', announcement);
+    sendPushNotificationToClass(announcement.classSection, title);
+  });
+
   res.status(201).json({ success: true, created: announcements.length });
 });
 
@@ -127,6 +142,9 @@ router.post('/teacher', restrictTo('teacher'), async (req, res) => {
     createdBy: req.user.id,
     createdByName
   });
+
+  global.io?.emit('new-announcement', announcement);
+  sendPushNotificationToClass(classSection.toUpperCase(), title);
 
   res.status(201).json(announcement);
 });

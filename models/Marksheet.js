@@ -1,4 +1,3 @@
-// models/Marksheet.js
 const mongoose = require('mongoose');
 
 const marksheetSchema = new mongoose.Schema({

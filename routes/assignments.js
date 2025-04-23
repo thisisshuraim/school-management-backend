@@ -1,4 +1,3 @@
-// routes/assignments.js
 const express = require('express');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
@@ -23,13 +22,11 @@ const upload = multer({
 
 router.use(protect);
 
-// GET all assignments
 router.get('/', async (req, res) => {
   const assignments = await Assignment.find();
   res.json(assignments);
 });
 
-// POST a new assignment
 router.post('/', upload.single('file'), async (req, res) => {
   const { classSection, title, subject, deadline } = req.body;
 
@@ -49,7 +46,6 @@ router.post('/', upload.single('file'), async (req, res) => {
   res.status(201).json(assignment);
 });
 
-// PUT update assignment
 router.put('/:id', async (req, res) => {
   const { title, subject, deadline } = req.body;
 
