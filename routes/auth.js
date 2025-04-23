@@ -22,11 +22,26 @@ router.post('/register', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
-  const { username, password, role, expoPushToken } = req.body;
-  const isBlocked = req?.body?.isBlocked ? req?.body?.isBlocked : false;
-  const hashed = bcrypt.hashSync(password, 10);
-  const updatedReqBody = { username : username?.toLowerCase(), password: hashed, role, isBlocked, expoPushToken }
-  res.json(await User.findByIdAndUpdate(req.params.id, updatedReqBody, { new: true }));
+  try {
+    const { username, password, role, expoPushToken } = req.body;
+    const isBlocked = req?.body?.isBlocked ? req?.body?.isBlocked : false;
+
+    const updateFields = {
+      isBlocked,
+      role
+    };
+
+    if (username) updateFields.username = username.toLowerCase();
+    if (password) updateFields.password = bcrypt.hashSync(password, 10);
+    if (expoPushToken) updateFields.expoPushToken = expoPushToken;
+
+    const updatedUser = await User.findByIdAndUpdate(req.params.id, updateFields, { new: true });
+
+    if (!updatedUser) return res.status(404).json({ message: 'User not found' });
+    res.json(updatedUser);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update user', error: err.message });
+  }
 });
 
 router.delete('/:id', async (req, res) => {
