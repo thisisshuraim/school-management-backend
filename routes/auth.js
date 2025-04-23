@@ -22,10 +22,10 @@ router.post('/register', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
-  const { username, password, role } = req.body;
+  const { username, password, role, expoPushToken } = req.body;
   const isBlocked = req?.body?.isBlocked ? req?.body?.isBlocked : false;
   const hashed = bcrypt.hashSync(password, 10);
-  const updatedReqBody = { username : username?.toLowerCase(), password: hashed, role, isBlocked }
+  const updatedReqBody = { username : username?.toLowerCase(), password: hashed, role, isBlocked, expoPushToken }
   res.json(await User.findByIdAndUpdate(req.params.id, updatedReqBody, { new: true }));
 });
 
