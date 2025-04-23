@@ -31,7 +31,12 @@ router.get('/', async (req, res) => {
   const relevant = await Announcement.find({ classSection: { $in: classSections } })
     .sort({ createdAt: -1 });
 
-  res.json(relevant);
+  const annotated = relevant.map(a => ({
+    ...a.toObject(),
+    read: a.readBy?.includes(req.user._id)
+  }));
+
+  res.json(annotated);
 });
 
 router.post('/:id/read', protect, async (req, res) => {
