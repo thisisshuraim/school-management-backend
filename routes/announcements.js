@@ -11,15 +11,23 @@ const router = express.Router();
 router.use(protect);
 
 const sendPushNotificationToClass = async (classSection, title) => {
+  const expo = new Expo();
+
   const students = await Student.find({ classSection }).populate('user');
-  const tokens = students
+  const studentTokens = students
     .map(s => s.user?.expoPushToken)
     .filter(t => t && Expo.isExpoPushToken(t));
 
-  if (tokens.length === 0) return;
+  const teachers = await Teacher.find({ assignedClasses: classSection }).populate('user');
+  const teacherTokens = teachers
+    .map(t => t.user?.expoPushToken)
+    .filter(t => t && Expo.isExpoPushToken(t));
 
-  const expo = new Expo();
-  const messages = tokens.map(token => ({
+  const allTokens = [...studentTokens, ...teacherTokens];
+
+  if (allTokens.length === 0) return;
+
+  const messages = allTokens.map(token => ({
     to: token,
     sound: 'default',
     title: '📣 New Announcement',
