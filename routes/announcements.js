@@ -45,14 +45,14 @@ router.get('/', async (req, res) => {
       classSection: { $in: classSections }
     }).sort({ createdAt: -1 });
 
-    const annotated = relevant.map(a => ({
-      ...a.toObject(),
-      read:
-        Array.isArray(a.readBy) &&
-        a.readBy.some(id =>
-          id && user.id && id.toString?.() === user.id.toString?.()
-        )
-    }));
+    const annotated = relevant.map(a => {
+      const readByIds = (a.readBy || []).map(id => id?.toString());
+      const userId = user.id?.toString();
+      return {
+        ...a.toObject(),
+        read: readByIds.includes(userId)
+      };
+    });
 
     res.json(annotated);
   } catch (err) {
