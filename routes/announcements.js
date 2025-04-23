@@ -33,7 +33,7 @@ router.get('/', async (req, res) => {
 
   const annotated = relevant.map(a => ({
     ...a.toObject(),
-    read: a.readBy?.includes(req.user._id)
+    read: a.readBy?.map(id => id.toString()).includes(req.user._id.toString())
   }));
 
   res.json(annotated);
@@ -49,21 +49,15 @@ router.post('/:id/read', protect, async (req, res) => {
     }
 
     const userId = req.user._id || req.user.id;
-
-    // Check if already marked
     const alreadyRead = announcement.readBy.some(id => id.toString() === userId.toString());
 
     if (!alreadyRead) {
       announcement.readBy.push(userId);
       await announcement.save();
-      console.log(`✅ Marked as read by user ${userId}`);
-    } else {
-      console.log(`ℹ️ Already marked as read by user ${userId}`);
     }
 
     res.json({ success: true, readByCount: announcement.readBy.length });
   } catch (err) {
-    console.error('❌ Error marking announcement as read:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
