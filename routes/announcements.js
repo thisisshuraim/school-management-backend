@@ -40,15 +40,24 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/:id/read', protect, async (req, res) => {
-  const announcement = await Announcement.findById(req.params.id);
-  if (!announcement) return res.status(404).json({ message: 'Not found' });
+  try {
+    const announcement = await Announcement.findById(req.params.id);
+    if (!announcement) return res.status(404).json({ message: 'Not found' });
 
-  if (!announcement.readBy.includes(req.user.id)) {
-    announcement.readBy.push(req.user.id);
-    await announcement.save();
+    const alreadyRead = announcement.readBy.some((id) =>
+      id.equals(req.user.id)
+    );
+
+    if (!alreadyRead) {
+      announcement.readBy.push(new mongoose.Types.ObjectId(req.user.id));
+      await announcement.save();
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Read error:', err);
+    res.status(500).json({ message: 'Failed to mark as read' });
   }
-
-  res.json({ success: true });
 });
 
 router.post('/admin', restrictTo('admin'), async (req, res) => {
