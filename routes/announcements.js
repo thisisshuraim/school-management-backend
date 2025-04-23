@@ -42,21 +42,29 @@ router.get('/', async (req, res) => {
 router.post('/:id/read', protect, async (req, res) => {
   try {
     const announcement = await Announcement.findById(req.params.id);
-    if (!announcement) return res.status(404).json({ message: 'Not found' });
 
-    const alreadyRead = announcement.readBy.some((id) =>
-      id.equals(req.user.id)
-    );
-
-    if (!alreadyRead) {
-      announcement.readBy.push(new mongoose.Types.ObjectId(req.user.id));
-      await announcement.save();
+    if (!announcement) {
+      console.log('Announcement not found');
+      return res.status(404).json({ message: 'Announcement not found' });
     }
 
-    res.json({ success: true });
+    const userId = req.user._id || req.user.id;
+
+    // Check if already marked
+    const alreadyRead = announcement.readBy.some(id => id.toString() === userId.toString());
+
+    if (!alreadyRead) {
+      announcement.readBy.push(userId);
+      await announcement.save();
+      console.log(`✅ Marked as read by user ${userId}`);
+    } else {
+      console.log(`ℹ️ Already marked as read by user ${userId}`);
+    }
+
+    res.json({ success: true, readByCount: announcement.readBy.length });
   } catch (err) {
-    console.error('Read error:', err);
-    res.status(500).json({ message: 'Failed to mark as read' });
+    console.error('❌ Error marking announcement as read:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
 
