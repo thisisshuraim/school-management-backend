@@ -15,7 +15,12 @@ router.get('/', async (req, res) => {
 
   if (user.role === 'admin') {
     const all = await Announcement.find().sort({ createdAt: -1 });
-    return res.json(all);
+    return res.json(
+      all.map(a => ({
+        ...a.toObject(),
+        read: a.readBy?.map(id => id.toString()).includes(user._id?.toString())
+      }))
+    );
   }
 
   if (user.role === 'teacher') {
@@ -33,11 +38,12 @@ router.get('/', async (req, res) => {
 
   const annotated = relevant.map(a => ({
     ...a.toObject(),
-    read: a.readBy?.map(id => id.toString()).includes(req.user._id.toString())
+    read: a.readBy?.map(id => id.toString()).includes(user._id?.toString())
   }));
 
   res.json(annotated);
 });
+
 
 router.post('/:id/read', protect, async (req, res) => {
   try {
