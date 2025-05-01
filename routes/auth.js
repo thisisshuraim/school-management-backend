@@ -23,7 +23,7 @@ router.post('/register', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const { username, password, role, expoPushToken } = req.body;
+    const { username, password, role } = req.body;
     const isBlocked = req?.body?.isBlocked ? req?.body?.isBlocked : false;
 
     const updateFields = {
@@ -33,7 +33,6 @@ router.put('/:id', async (req, res) => {
 
     if (username) updateFields.username = username.toLowerCase();
     if (password) updateFields.password = bcrypt.hashSync(password, 10);
-    if (expoPushToken) updateFields.expoPushToken = expoPushToken;
 
     const updatedUser = await User.findByIdAndUpdate(req.params.id, updateFields, { new: true });
 

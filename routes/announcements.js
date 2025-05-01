@@ -5,44 +5,9 @@ const Student = require('../models/Student');
 const User = require('../models/User');
 const { protect, restrictTo } = require('../middleware/auth');
 const { capitalize } = require('../utils/formatter');
-const { Expo } = require('expo-server-sdk');
 
 const router = express.Router();
 router.use(protect);
-
-const sendPushNotificationToClass = async (classSection, title) => {
-  const expo = new Expo();
-
-  const students = await Student.find({ classSection }).populate('user');
-  const studentTokens = students
-    .map(s => s.user?.expoPushToken)
-    .filter(t => t && Expo.isExpoPushToken(t));
-
-  const teachers = await Teacher.find({ assignedClasses: classSection }).populate('user');
-  const teacherTokens = teachers
-    .map(t => t.user?.expoPushToken)
-    .filter(t => t && Expo.isExpoPushToken(t));
-
-  const allTokens = [...studentTokens, ...teacherTokens];
-
-  if (allTokens.length === 0) return;
-
-  const messages = allTokens.map(token => ({
-    to: token,
-    sound: 'default',
-    title: '📣 New Announcement',
-    body: `New announcement: ${title}`,
-  }));
-
-  const chunks = expo.chunkPushNotifications(messages);
-  for (const chunk of chunks) {
-    try {
-      await expo.sendPushNotificationsAsync(chunk);
-    } catch (err) {
-      console.error('Expo push error:', err);
-    }
-  }
-};
 
 router.get('/', async (req, res) => {
   try {
@@ -127,7 +92,6 @@ router.post('/admin', restrictTo('admin'), async (req, res) => {
 
   announcements.forEach(announcement => {
     global.io?.emit('new-announcement', announcement);
-    sendPushNotificationToClass(announcement.classSection, announcement.title);
   });
 
   res.status(201).json({ success: true, created: announcements.length });
@@ -152,8 +116,6 @@ router.post('/teacher', restrictTo('teacher'), async (req, res) => {
   });
 
   global.io?.emit('new-announcement', announcement);
-  sendPushNotificationToClass(announcement.classSection, announcement.title);
-
   res.status(201).json(announcement);
 });
 
