@@ -6,6 +6,8 @@ const Assignment = require('../models/Assignment');
 const { protect } = require('../middleware/auth');
 const s3 = require('../utils/s3');
 const { capitalize } = require('../utils/formatter');
+const Student = require('../models/Student');
+const Teacher = require('../models/Teacher');
 
 const router = express.Router();
 
@@ -23,8 +25,27 @@ const upload = multer({
 router.use(protect);
 
 router.get('/', async (req, res) => {
-  const assignments = await Assignment.find();
-  res.json(assignments);
+  try {
+    let filter = {};
+
+    if (req.user.role === 'student') {
+      const student = await Student.findOne({ user: req.user.id });
+      if (!student) return res.status(404).json({ message: 'Student not found' });
+      filter.classSection = student.classSection;
+
+    } else if (req.user.role === 'teacher') {
+      const teacher = await Teacher.findOne({ user: req.user.id });
+      if (!teacher) return res.status(404).json({ message: 'Teacher not found' });
+      filter.classSection = { $in: teacher.assignedClasses };
+    }
+
+    const assignments = await Assignment.find(filter);
+    res.json(assignments);
+
+  } catch (err) {
+    console.error('Fetch assignments error:', err);
+    res.status(500).json({ message: 'Error fetching assignments', error: err.message });
+  }
 });
 
 router.post('/', upload.single('file'), async (req, res) => {
