@@ -63,6 +63,17 @@ router.post('/', upload.single('file'), async (req, res) => {
 
     if (!user) return res.status(404).json({ message: 'User not found' });
 
+    const existing = await Marksheet.findOne({ user: user._id });
+    if (existing) {
+      const oldKey = new URL(existing.fileUrl).pathname.slice(1);
+      await s3.deleteObject({
+        Bucket: 'school-management-thisisshuraim',
+        Key: oldKey
+      }).promise();
+
+      await Marksheet.findByIdAndDelete(existing._id);
+    }
+
     const m = await Marksheet.create({
       user: user._id,
       fileUrl: decodeURIComponent(req.file.location)
