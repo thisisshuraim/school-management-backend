@@ -36,7 +36,7 @@ router.get('/', async (req, res) => {
   try {
     const all = await Marksheet.find().populate('user');
     const mapped = await Promise.all(all.map(async (m) => {
-      const username = m.user?.username || 'unknown';
+      const username = m.user?.username?.toLowerCase() || 'unknown';
       const user = await User.findOne({ username });
       const userId = user?._id;
       const student = await Student.findOne({ user: userId });
@@ -59,7 +59,7 @@ router.get('/', async (req, res) => {
 router.post('/', upload.single('file'), async (req, res) => {
   try {
     const { username } = req.body;
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username : username?.toLowerCase() });
 
     if (!user) return res.status(404).json({ message: 'User not found' });
 
