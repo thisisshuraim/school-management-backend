@@ -21,6 +21,7 @@ app.use('/api/marksheets', require('./routes/marksheets'));
 app.use('/api/timetable', require('./routes/timetable'));
 app.use('/api/lectures', require('./routes/lectures'));
 app.use('/api/announcements', require('./routes/announcements'));
+app.use('/api/calendar', require('./routes/calendar'));
 
 const server = http.createServer(app);
 const io = new Server(server, {
