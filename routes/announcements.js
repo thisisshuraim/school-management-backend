@@ -30,12 +30,17 @@ router.get('/', async (req, res) => {
     if (user.role === 'teacher') {
       const teacher = await Teacher.findOne({ user: user.id });
       classSections = teacher?.assignedClasses || [];
+      classSections.push('teachers');
     }
 
     if (user.role === 'student') {
       const student = await Student.findOne({ user: user.id });
       classSections = [student?.classSection];
+      classSections.push('students');
     }
+
+    classSections.push('all');
+    classSections = classSections.filter(Boolean);
 
     const relevant = await Announcement.find({ classSection: { $in: classSections } }).sort({ createdAt: -1 });
 
