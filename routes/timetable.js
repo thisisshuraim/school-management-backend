@@ -1,23 +1,11 @@
 const express = require('express');
-const multer = require('multer');
-const multerS3 = require('multer-s3');
-const { v4: uuidv4 } = require('uuid');
 const Timetable = require('../models/Timetable');
 const { protect, restrictTo } = require('../middleware/auth');
-const s3 = require('../utils/s3');
+const { uploadObject, deleteObject} = require('../utils/s3');
 
 const router = express.Router();
 
-const upload = multer({
-  storage: multerS3({
-    s3,
-    bucket: 'school-management-thisisshuraim',
-    key: (req, file, cb) => {
-      const filename = `timetables/${uuidv4()}-${file.originalname}`;
-      cb(null, filename);
-    }
-  })
-});
+const upload = uploadObject("timetables");
 
 router.get('/my', protect, async (req, res) => {
   const user = req.user;
