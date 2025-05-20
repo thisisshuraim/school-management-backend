@@ -10,6 +10,7 @@ const Lecture = require('./models/Lecture');
 const Marksheet = require('./models/Marksheet');
 const Timetable = require('./models/Timetable');
 const Announcement = require('./models/Announcement');
+const Calendar = require('../models/Calendar');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/school-management';
 
@@ -25,6 +26,7 @@ async function cleanData() {
   await Marksheet.deleteMany();
   await Timetable.deleteMany();
   await Announcement.deleteMany();
+  await Calendar.deleteMany();
 
   console.log('Cleaning complete');
   process.exit();
