@@ -77,11 +77,7 @@ router.delete('/:id', async (req, res) => {
     if (!record) return res.status(404).json({ message: 'Marksheet not found' });
 
     const key = new URL(record.fileUrl).pathname.slice(1);
-
-    await s3.deleteObject({
-      Bucket: 'school-management-thisisshuraim',
-      Key: key
-    }).promise();
+    deleteObject(key);
 
     const deleted = await Marksheet.findByIdAndDelete(req.params.id);
     res.json(deleted);
