@@ -24,7 +24,7 @@ const uploadObject = (dir) => multer({
 
 const deleteObject = async (key) => {
   await s3.deleteObject({
-    Bucket: bucket,
+    Bucket: process.env.BUCKET,
     Key: key
   }).promise();
 }
