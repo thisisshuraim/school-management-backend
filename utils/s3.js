@@ -10,7 +10,6 @@ AWS.config.update({
 });
 
 const s3 = new AWS.S3();
-const bucket = "school-management-thisisshuraim";
 
 const uploadObject = (dir) => multer({
   storage: multerS3({
