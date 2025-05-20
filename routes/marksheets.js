@@ -1,24 +1,12 @@
 const express = require('express');
-const multer = require('multer');
-const multerS3 = require('multer-s3');
-const { v4: uuidv4 } = require('uuid');
 const Marksheet = require('../models/Marksheet');
 const User = require('../models/User');
 const Student = require('../models/Student');
 const { protect, restrictTo } = require('../middleware/auth');
-const s3 = require('../utils/s3');
+const { uploadObject, deleteObject} = require('../utils/s3');
 const router = express.Router();
 
-const upload = multer({
-  storage: multerS3({
-    s3,
-    bucket: 'school-management-thisisshuraim',
-    key: (req, file, cb) => {
-      const filename = `marksheets/${uuidv4()}-${file.originalname}`;
-      cb(null, filename);
-    }
-  })
-});
+const upload = uploadObject("marksheets");
 
 router.get('/my', protect, restrictTo('student'), async (req, res) => {
   try {
@@ -66,10 +54,7 @@ router.post('/', upload.single('file'), async (req, res) => {
     const existing = await Marksheet.findOne({ user: user._id });
     if (existing) {
       const oldKey = new URL(existing.fileUrl).pathname.slice(1);
-      await s3.deleteObject({
-        Bucket: 'school-management-thisisshuraim',
-        Key: oldKey
-      }).promise();
+      await deleteObject(oldKey);
 
       await Marksheet.findByIdAndDelete(existing._id);
     }

@@ -1,26 +1,14 @@
 const express = require('express');
-const multer = require('multer');
-const multerS3 = require('multer-s3');
-const { v4: uuidv4 } = require('uuid');
 const Assignment = require('../models/Assignment');
 const { protect } = require('../middleware/auth');
-const s3 = require('../utils/s3');
+const { uploadObject, deleteObject} = require('../utils/s3');
 const { capitalize } = require('../utils/formatter');
 const Student = require('../models/Student');
 const Teacher = require('../models/Teacher');
 
 const router = express.Router();
 
-const upload = multer({
-  storage: multerS3({
-    s3,
-    bucket: 'school-management-thisisshuraim',
-    key: (req, file, cb) => {
-      const filename = `assignments/${uuidv4()}-${file.originalname}`;
-      cb(null, filename);
-    }
-  })
-});
+const upload = uploadObject("assignments");
 
 router.use(protect);
 
@@ -85,11 +73,7 @@ router.delete('/:id', async (req, res) => {
     if (!record) return res.status(404).json({ message: 'Assignment not found' });
 
     const key = new URL(record.fileUrl).pathname.slice(1);
-
-    await s3.deleteObject({
-      Bucket: 'school-management-thisisshuraim',
-      Key: key
-    }).promise();
+    await deleteObject(key);
 
     const deleted = await Assignment.findByIdAndDelete(req.params.id);
     res.json(deleted);

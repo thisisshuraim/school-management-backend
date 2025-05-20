@@ -36,6 +36,7 @@ MONGO_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net/school-management
 JWT_SECRET=your_jwt_secret
 AWS_ACCESS_KEY_ID=your_key
 AWS_SECRET_ACCESS_KEY=your_secret
+BUCKET=your_bucket
 ```
 
 Run the server:

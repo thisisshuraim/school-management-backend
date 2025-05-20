@@ -1,26 +1,13 @@
 const express = require('express');
-const multer = require('multer');
-const multerS3 = require('multer-s3');
-const { v4: uuidv4 } = require('uuid');
 const Lecture = require('../models/Lecture');
 const { protect } = require('../middleware/auth');
-const s3 = require('../utils/s3');
+const { uploadObject, deleteObject} = require('../utils/s3');
 const Teacher = require('../models/Teacher');
 const Student = require('../models/Student');
 const { capitalize } = require('../utils/formatter');
 
 const router = express.Router();
-
-const upload = multer({
-  storage: multerS3({
-    s3,
-    bucket: 'school-management-thisisshuraim',
-    key: (req, file, cb) => {
-      const filename = `lectures/${uuidv4()}-${file.originalname}`;
-      cb(null, filename);
-    }
-  })
-});
+const upload = uploadObject("lectures");
 
 router.use(protect);
 
@@ -92,11 +79,7 @@ router.delete('/:id', async (req, res) => {
     if (!record) return res.status(404).json({ message: 'Lecture not found' });
 
     const key = new URL(record.videoUrl).pathname.slice(1);
-
-    await s3.deleteObject({
-      Bucket: 'school-management-thisisshuraim',
-      Key: key
-    }).promise();
+    await deleteObject(key);
 
     const deleted = await Lecture.findByIdAndDelete(record._id);
     res.json(deleted);
