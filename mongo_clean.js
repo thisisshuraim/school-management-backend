@@ -10,7 +10,7 @@ const Lecture = require('./models/Lecture');
 const Marksheet = require('./models/Marksheet');
 const Timetable = require('./models/Timetable');
 const Announcement = require('./models/Announcement');
-const Calendar = require('../models/Calendar');
+const Calendar = require('./models/Calendar');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/school-management';
 
