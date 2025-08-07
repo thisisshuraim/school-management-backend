@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+require('dotenv').config();
+
 const User = require('./models/User');
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/school-management';
-require('dotenv').config();
 
 const hashPassword = (plain) => bcrypt.hashSync(plain, 10);
 
