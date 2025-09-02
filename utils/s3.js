@@ -16,7 +16,8 @@ const uploadObject = (dir) => multer({
     s3,
     bucket: process.env.BUCKET,
     key: (_, file, cb) => {
-      const filename = `${dir}/${uuidv4()}-${file.originalname}`;
+      const sanitizedFilename = sanitizeFilename(file.originalname);
+      const filename = `${dir}/${uuidv4()}-${sanitizedFilename}`;
       cb(null, filename);
     }
   })
