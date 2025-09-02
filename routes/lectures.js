@@ -56,6 +56,7 @@ router.post('/', upload.single('video'), async (req, res) => {
   const { classSection, title, subject } = req.body;
 
   if (!classSection || !title || !subject || !req.file) {
+    console.log("reached here", req.body);
     return res.status(400).json({ message: 'Missing required fields' });
   }
 
