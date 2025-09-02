@@ -11,30 +11,30 @@ AWS.config.update({
 
 const s3 = new AWS.S3();
 
-const sanitizeFilename = filename => {
+const sanitizeFilename = (filename) => {
   if (typeof filename !== 'string' || filename.length === 0) {
     return '';
   }
 
-  const uniquePrefix = Date.now();
+  const decodedFilename = decodeURIComponent(filename);
 
-  const lastDotIndex = filename.lastIndexOf('.');
-  let name = filename;
+  const lastDotIndex = decodedFilename.lastIndexOf('.');
+  let name = decodedFilename;
   let extension = '';
-
   if (lastDotIndex > -1) {
-    name = filename.substring(0, lastDotIndex);
-    extension = filename.substring(lastDotIndex);
+    name = decodedFilename.substring(0, lastDotIndex);
+    extension = decodedFilename.substring(lastDotIndex);
   }
-
   const sanitizedName = name
     .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-    .replace(/--+/g, '-')
-    .replace(/^-|-$/g, '');
+    .replace(/\s+/g, '-') // Replace spaces and whitespace with hyphens
+    .replace(/[^a-z0-9-]/g, '') // Remove all non-alphanumeric characters except hyphens
+    .replace(/--+/g, '-') // Replace multiple hyphens with a single one
+    .replace(/^-|-$/g, ''); // Remove leading or trailing hyphens
 
-  return `${uniquePrefix}-${sanitizedName}${extension}`;
+  const sanitizedExtension = extension.toLowerCase().replace(/[^a-z0-9.]/g, '');
+
+  return `${sanitizedName}${sanitizedExtension}`;
 }
 
 const uploadObject = (dir) => multer({
