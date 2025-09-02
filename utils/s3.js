@@ -11,6 +11,32 @@ AWS.config.update({
 
 const s3 = new AWS.S3();
 
+const sanitizeFilename = filename => {
+  if (typeof filename !== 'string' || filename.length === 0) {
+    return '';
+  }
+
+  const uniquePrefix = Date.now();
+
+  const lastDotIndex = filename.lastIndexOf('.');
+  let name = filename;
+  let extension = '';
+
+  if (lastDotIndex > -1) {
+    name = filename.substring(0, lastDotIndex);
+    extension = filename.substring(lastDotIndex);
+  }
+
+  const sanitizedName = name
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/--+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  return `${uniquePrefix}-${sanitizedName}${extension}`;
+}
+
 const uploadObject = (dir) => multer({
   storage: multerS3({
     s3,
